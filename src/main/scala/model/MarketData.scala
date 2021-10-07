@@ -44,7 +44,7 @@ object Company {
   )
 }
 
-case class ThresholdAlert(symbol: String, percentage: Double)
-object ThresholdAlert {
-  implicit val format: Format[ThresholdAlert] = Json.format
+case class PercentChangeMsg(symbol: String, percentage: Double)
+object PercentChangeMsg {
+  implicit val format: Format[PercentChangeMsg] = Json.format
 }

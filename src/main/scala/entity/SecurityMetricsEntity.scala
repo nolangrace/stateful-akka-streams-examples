@@ -4,9 +4,8 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.stream.BoundedSourceQueue
-import model.{Quote, ThresholdAlert}
+import model.{PercentChangeMsg, Quote}
 import org.slf4j.LoggerFactory
-import runner.AkkaAppRunner.getClass
 
 import java.time.temporal.ChronoUnit
 import scala.math.Ordered.orderingToOrdered
@@ -21,7 +20,7 @@ object SecurityMetricsEntity {
 
   def apply(
       entityId: String,
-      source: BoundedSourceQueue[ThresholdAlert]
+      source: BoundedSourceQueue[PercentChangeMsg]
   ): Behavior[QuoteMessage] = {
     def updated(quoteList: List[Quote]): Behavior[QuoteMessage] = {
       Behaviors.receiveMessage[QuoteMessage] {
@@ -47,7 +46,9 @@ object SecurityMetricsEntity {
             log.info(s"Percent Change: $percentChange")
             if (Math.abs(percentChange) > 1) {
               log.info(s"Percent Threshold Triggered: $percentChange")
-              source.offer(ThresholdAlert(quote.company.symbol, percentChange))
+              source.offer(
+                PercentChangeMsg(quote.company.symbol, percentChange)
+              )
             }
           }
 

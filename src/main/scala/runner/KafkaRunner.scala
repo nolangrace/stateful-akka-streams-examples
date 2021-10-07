@@ -3,10 +3,10 @@ package runner
 import akka.Done
 import akka.actor.ActorSystem
 import akka.kafka.ProducerSettings
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.Source
 import akka.kafka.scaladsl.Producer
 import io.github.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
-import model.{Company, Quote}
+import model.{Configs, Quote}
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
@@ -14,17 +14,17 @@ import play.api.libs.json.Json
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
-import scala.util.Random
 
 object KafkaRunner {
   implicit val system: ActorSystem = ActorSystem("KafkaRunner")
   implicit val ec = system.dispatcher
-  val kafkaPort = 12346
-  implicit val blaConfig = EmbeddedKafkaConfig(kafkaPort = kafkaPort)
+
+  val quoteTopic = "quote-topic"
+  implicit val blaConfig = EmbeddedKafkaConfig(kafkaPort = Configs.kafkaPort)
   val config = system.settings.config.getConfig("akka.kafka.producer")
   val producerSettings =
     ProducerSettings(config, new StringSerializer, new StringSerializer)
-      .withBootstrapServers(s"http://localhost:$kafkaPort")
+      .withBootstrapServers(Configs.kafkaBootstrapServers)
   val log = LoggerFactory.getLogger(getClass)
 
   def run(): Future[Done] = {
@@ -48,11 +48,17 @@ object KafkaRunner {
         log.info(s"$quote")
         quote
       })
-      .map(quote => Json.stringify(Json.toJson(quote)))
-      .map(value => new ProducerRecord[String, String]("topic", value))
+      .map(quote => {
+        val stringValue = Json.stringify(Json.toJson(quote))
+        new ProducerRecord[String, String](
+          quoteTopic,
+          quote.company.symbol,
+          stringValue
+        )
+      })
       .runWith(Producer.plainSink(producerSettings))
       .andThen {
-        case e: Exception => log.error("Bla", e)
+        case e: Exception => log.error("Error", e)
         case _ =>
           println("Shutting down")
           EmbeddedKafka.stop()
