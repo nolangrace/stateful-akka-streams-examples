@@ -1,0 +1,34 @@
+<configuration>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- encoders are assigned the type
+             ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="runner" level="INFO" />
+    <logger name="entity" level="INFO" />
+    <logger name="runner.KafkaRunner" level="ERROR" />
+    <!-- Set logging for all Play library classes to INFO -->
+    <logger name="play" level="INFO" />
+    <!-- Set logging for all Akka library classes to INFO -->
+    <logger name="akka" level="INFO" />
+    <!-- Set logging for all Lagom library classes to INFO -->
+    <logger name="com.lightbend.lagom" level="DEBUG" />
+
+    <!-- Cassandra and the datastax driver are used by the Lagom event sourcing modules -->
+    <logger name="org.apache.cassandra" level="ERROR" />
+    <logger name="com.datastax.driver" level="ERROR" />
+    <!-- Turning off connection error logging to avoid noise when services are forcibly stopped -->
+    <logger name="com.datastax.driver.core.ControlConnection" level="OFF" />
+    <!-- Turn down Kafka noise -->
+    <logger name="org.apache.kafka" level="WARN" />
+    <logger name="kafka" level="WARN" />
+    <logger name="org.apache" level="WARN" />
+
+    <root level="debug">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>
