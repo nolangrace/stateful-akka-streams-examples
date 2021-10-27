@@ -6,7 +6,7 @@ import akka.kafka.ProducerSettings
 import akka.stream.scaladsl.Source
 import akka.kafka.scaladsl.Producer
 import io.github.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
-import model.{Configs, Quote}
+import model.Quote
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
@@ -20,11 +20,14 @@ object KafkaRunner {
   implicit val ec = system.dispatcher
 
   val quoteTopic = "quote-topic"
-  implicit val blaConfig = EmbeddedKafkaConfig(kafkaPort = Configs.kafkaPort)
+  val kafkaPort = 12346
+  implicit val portConfig = EmbeddedKafkaConfig(kafkaPort = kafkaPort)
   val config = system.settings.config.getConfig("akka.kafka.producer")
+  private val kafkaBootstrapServers = s"http://localhost:$kafkaPort"
+
   val producerSettings =
     ProducerSettings(config, new StringSerializer, new StringSerializer)
-      .withBootstrapServers(Configs.kafkaBootstrapServers)
+      .withBootstrapServers(kafkaBootstrapServers)
   val log = LoggerFactory.getLogger(getClass)
 
   def run(): Future[Done] = {
