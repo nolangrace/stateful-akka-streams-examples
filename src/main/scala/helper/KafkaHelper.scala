@@ -3,13 +3,21 @@ package helper
 import akka.actor.ActorSystem
 import akka.actor.typed.scaladsl.adapter.TypedActorRefOps
 import akka.kafka.cluster.sharding.KafkaClusterSharding
-import akka.kafka.{CommitterSettings, ConsumerRebalanceEvent, ConsumerSettings, Subscriptions}
+import akka.kafka.{
+  CommitterSettings,
+  ConsumerRebalanceEvent,
+  ConsumerSettings,
+  Subscriptions
+}
 import akka.kafka.scaladsl.{Committer, Consumer}
 import entity.SecurityMetricsEntity
 import entity.SecurityMetricsEntity.QuoteMessage
 import model.Quote
 import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.apache.kafka.common.serialization.{ByteArrayDeserializer, StringDeserializer}
+import org.apache.kafka.common.serialization.{
+  ByteArrayDeserializer,
+  StringDeserializer
+}
 import play.api.libs.json.Json
 
 import scala.concurrent.Future
@@ -46,15 +54,31 @@ class KafkaHelper(system: ActorSystem) {
     Committer.sink(committerSettings)
   }
 
+  // https://doc.akka.io/docs/alpakka-kafka/current/cluster-sharding.html
   val getKafkaShardedSourceTools = {
 
-    val rebalanceListener: akka.actor.typed.ActorRef[ConsumerRebalanceEvent] =
-      KafkaClusterSharding(system).rebalanceListener(
-        SecurityMetricsEntity.TypeKey
+    // automatically retrieving the number of partitions requires a round trip to a Kafka broker
+    val messageExtractor: Future[
+      KafkaClusterSharding.KafkaShardingNoEnvelopeExtractor[QuoteMessage]
+    ] =
+      KafkaClusterSharding(system).messageExtractorNoEnvelope(
+        timeout = 10.seconds,
+        topic = quoteTopic,
+        entityIdExtractor = (msg: QuoteMessage) => msg.quote.company.symbol,
+        settings = kafkaConsumerSettings
       )
 
-    val rebalanceListenerClassic: akka.actor.ActorRef =
-      rebalanceListener.toClassic
+    /*
+       The Rebalance Listener is a pre-defined Actor that will handle ConsumerRebalanceEvents that will
+       update the Akka Cluster External Sharding strategy when subscribed partitions are re-assigned to consumers
+       running on different cluster nodes.
+     */
+    val rebalanceListener =
+      KafkaClusterSharding(system)
+        .rebalanceListener(
+          SecurityMetricsEntity.TypeKey
+        )
+        .toClassic
 
     val kafkaShardingConsumerSettings =
       ConsumerSettings(
@@ -69,29 +93,12 @@ class KafkaHelper(system: ActorSystem) {
 
     val shardingSubscription = Subscriptions
       .topics(quoteTopic)
-      .withRebalanceListener(rebalanceListenerClassic)
+      .withRebalanceListener(rebalanceListener)
 
-    // automatically retrieving the number of partitions requires a round trip to a Kafka broker
-    val messageExtractor: Future[
-      KafkaClusterSharding.KafkaShardingNoEnvelopeExtractor[QuoteMessage]
-    ] =
-      KafkaClusterSharding(system).messageExtractorNoEnvelope(
-        timeout = 10.seconds,
-        topic = quoteTopic,
-        entityIdExtractor = (msg: QuoteMessage) => msg.quote.company.symbol,
-        settings = kafkaConsumerSettings
-      )
-
-    val consumer= Consumer
+    val consumer = Consumer
       .committableSource(kafkaShardingConsumerSettings, shardingSubscription)
 
     (consumer, messageExtractor)
   }
-
-
-
-
-  // convert the rebalance listener to a classic ActorRef until Alpakka Kafka supports Akka Typed
-  import akka.actor.typed.scaladsl.adapter._
 
 }

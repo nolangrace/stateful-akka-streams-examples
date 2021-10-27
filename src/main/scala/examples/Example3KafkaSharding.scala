@@ -49,28 +49,24 @@ object Example3KafkaSharding {
 
     val (kafkaSource, messageExtractor) = kafkaHelper.getKafkaShardedSourceTools
 
-    messageExtractor.onComplete {
-      case Success(extractor) =>
-        ClusterSharding(system.toTyped).init(
-          Entity(SecurityMetricsEntity.TypeKey)(createBehavior =
-            entityContext =>
-              SecurityMetricsEntity.apply(entityContext.entityId, queue)
-          )
-            .withAllocationStrategy(
-              new ExternalShardAllocationStrategy(
-                system,
-                SecurityMetricsEntity.TypeKey.name
-              )
+    messageExtractor.map(extractor =>
+      // Setup Our Cluster Sharding for our Actor
+      // Using the information Extracted from Kafka
+      ClusterSharding(system.toTyped).init(
+        Entity(SecurityMetricsEntity.TypeKey)(createBehavior =
+          entityContext =>
+            SecurityMetricsEntity.apply(entityContext.entityId, queue)
+        )
+          .withAllocationStrategy(
+            new ExternalShardAllocationStrategy(
+              system,
+              SecurityMetricsEntity.TypeKey.name
             )
-            .withMessageExtractor(extractor)
-            .withSettings(ClusterShardingSettings(system.toTyped))
-        )
-      case Failure(ex) =>
-        system.log.error(
-          "An error occurred while obtaining the message extractor",
-          ex
-        )
-    }
+          )
+          .withMessageExtractor(extractor)
+          .withSettings(ClusterShardingSettings(system.toTyped))
+      )
+    )
 
     kafkaSource
       .map(message => {
