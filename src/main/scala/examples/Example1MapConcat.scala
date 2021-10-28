@@ -10,10 +10,6 @@ import model.{PercentChangeMsg, Quote}
 import org.slf4j.LoggerFactory
 import runner.KafkaRunner
 
-import java.time.temporal.ChronoUnit
-import scala.concurrent.duration.{Duration, DurationInt, SECONDS}
-import scala.math.Ordered.orderingToOrdered
-
 object Example1MapConcat {
   implicit val system: ActorSystem = ActorSystem("KafkaRunner")
   implicit val ec = system.dispatcher
@@ -42,7 +38,7 @@ object Example1MapConcat {
           val quote = kafkaMessage._1
           val kafkaOffset = kafkaMessage._2
 
-          quoteList = Quote.updateQuoteWindow(quote :: quoteList,10)
+          quoteList = Quote.updateQuoteWindow(quote :: quoteList, 10)
           val percentChange: Double = Quote.calculatePercentChange(quoteList)
           val pcm = PercentChangeMsg(quote.company.symbol, percentChange)
           (pcm, kafkaOffset) :: Nil

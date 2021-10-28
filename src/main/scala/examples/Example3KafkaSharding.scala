@@ -17,7 +17,6 @@ import play.api.libs.json.Json
 import runner.KafkaRunner
 
 import scala.concurrent.duration.DurationInt
-import scala.util.{Failure, Success}
 
 object Example3KafkaSharding {
   implicit val system: ActorSystem = ActorSystem("KafkaRunner")

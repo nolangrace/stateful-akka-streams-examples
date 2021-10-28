@@ -1,11 +1,9 @@
 package model
 
-import com.fasterxml.jackson.annotation.JsonFormat
 import play.api.libs.json.{Format, Json}
 
 import java.time.Instant
-import java.time.temporal.{ChronoUnit, TemporalAmount, TemporalUnit}
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import java.time.temporal.ChronoUnit
 import scala.math.Ordered.orderingToOrdered
 import scala.util.Random
 
