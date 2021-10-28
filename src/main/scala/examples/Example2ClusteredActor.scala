@@ -45,14 +45,12 @@ object Example2ClusteredActor {
       .toMat(Sink.ignore)(Keep.left)
       .run()
 
-    val shardRegion
-        : ActorRef[ShardingEnvelope[SecurityMetricsEntity.QuoteMessage]] =
-      sharding.init(
-        Entity(SecurityMetricsEntity.TypeKey)(createBehavior =
-          entityContext =>
-            SecurityMetricsEntity.apply(entityContext.entityId, queue)
-        )
+    sharding.init(
+      Entity(SecurityMetricsEntity.TypeKey)(createBehavior =
+        entityContext =>
+          SecurityMetricsEntity.apply(entityContext.entityId, queue)
       )
+    )
 
     kafkaHelper.KafkaSource
       .mapAsync(1)(kafkaMessage => {

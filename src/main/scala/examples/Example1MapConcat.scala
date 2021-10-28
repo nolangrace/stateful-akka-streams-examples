@@ -31,15 +31,15 @@ object Example1MapConcat {
     kafkaHelper.KafkaSource
       .groupBy(maxSubstreams = 10, msg => msg._1.company.symbol)
       .statefulMapConcat { () =>
-        var quoteList = List.empty[Quote]
+        var quoteWindow = List.empty[Quote]
 
         // we return the function that will be invoked for each element
         { kafkaMessage =>
           val quote = kafkaMessage._1
           val kafkaOffset = kafkaMessage._2
 
-          quoteList = Quote.updateQuoteWindow(quote :: quoteList, 10)
-          val percentChange: Double = Quote.calculatePercentChange(quoteList)
+          quoteWindow = Quote.updateQuoteWindow(quote :: quoteWindow, 10)
+          val percentChange: Double = Quote.calculatePercentChange(quoteWindow)
           val pcm = PercentChangeMsg(quote.company.symbol, percentChange)
           (pcm, kafkaOffset) :: Nil
         }
