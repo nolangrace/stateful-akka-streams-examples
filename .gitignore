@@ -37,6 +37,7 @@
 .tags_sorted_by_file
 .target
 .worksheet
+.bsp
 Makefile
 TAGS
 _akka_cluster/
