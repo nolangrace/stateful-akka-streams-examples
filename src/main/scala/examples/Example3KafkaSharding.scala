@@ -11,9 +11,8 @@ import akka.stream.BoundedSourceQueue
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import entity.SecurityMetricsEntity
 import helper.KafkaHelper
-import model.{PercentChangeMsg, Quote}
+import model.PercentChangeMsg
 import org.slf4j.LoggerFactory
-import play.api.libs.json.Json
 import runner.KafkaRunner
 
 import scala.concurrent.duration.DurationInt
@@ -68,10 +67,6 @@ object Example3KafkaSharding {
     )
 
     kafkaSource
-      .map(message => {
-        val quote: Quote = Json.parse(message.record.value()).as[Quote]
-        (quote, message.committableOffset)
-      })
       .mapAsync(1)(kafkaMessage => {
         val quote = kafkaMessage._1
         val kafkaOffset = kafkaMessage._2

@@ -95,10 +95,14 @@ class KafkaHelper(system: ActorSystem) {
       .topics(quoteTopic)
       .withRebalanceListener(rebalanceListener)
 
-    val consumer = Consumer
+    val kafkaSource = Consumer
       .committableSource(kafkaShardingConsumerSettings, shardingSubscription)
+      .map(message => {
+        val quote: Quote = Json.parse(message.record.value()).as[Quote]
+        (quote, message.committableOffset)
+      })
 
-    (consumer, messageExtractor)
+    (kafkaSource, messageExtractor)
   }
 
 }
